@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseMap | Indoor Outdoor Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+  <div class="bg-orb orb-c"></div>
+  <div class="grain"></div>
+
+  <main class="dashboard-shell">
+    <header class="top-nav glass-panel">
+      <div class="brand-wrap">
+        <p class="eyebrow">Realtime Indoor Intelligence</p>
+        <h1>PulseMap Cyber Deck</h1>
+        <p class="subtitle">Hybrid localization dashboard powered by Wi-Fi, BLE, IMU, GPS and quantum-inspired fusion.</p>
+      </div>
+
+      <div class="nav-controls">
+        <div class="input-row">
+          <label for="apiBase">API</label>
+          <input id="apiBase" type="text" value="http://localhost:8000" />
+          <button id="saveApi">Connect</button>
+        </div>
+        <div class="action-row compact">
+          <button id="toggleAutoRotate" class="secondary">Auto Rotate: On</button>
+          <button id="resetCamera" class="secondary">Reset Camera</button>
+          <button id="focusTarget" class="secondary">Focus Target</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="dashboard-grid">
+      <aside class="left-sidebar glass-panel panel">
+        <div class="panel-head">
+          <h2>Operations</h2>
+          <span class="pill">live controls</span>
+        </div>
+
+        <div class="action-row">
+          <button id="startDemo">Start Demo Stream</button>
+          <button id="stopDemo" class="secondary">Stop Demo</button>
+        </div>
+
+        <div class="action-row">
+          <button id="startMesh">Start P2P Mesh</button>
+          <button id="stopMesh" class="secondary">Stop Mesh</button>
+        </div>
+
+        <label for="scenarioSelect" class="mini-label">Scenario</label>
+        <div class="input-row">
+          <select id="scenarioSelect">
+            <option value="balanced">Balanced</option>
+            <option value="office-heavy">Office-heavy</option>
+            <option value="warehouse-heavy">Warehouse-heavy</option>
+            <option value="outdoor-heavy">Outdoor-heavy</option>
+          </select>
+          <button id="applyScenario" class="secondary">Apply</button>
+        </div>
+
+        <label for="targetSelect" class="mini-label">Target Device</label>
+        <div class="input-row">
+          <select id="targetSelect"></select>
+          <button id="applyTarget">Track</button>
+        </div>
+
+        <article class="inner-panel">
+          <div class="panel-head">
+            <h3>Device Feed</h3>
+            <span class="pill">hover + click focus</span>
+          </div>
+          <div id="deviceCards" class="device-cards"></div>
+        </article>
+      </aside>
+
+      <section class="center-area">
+        <section class="kpi-grid" id="kpiGrid">
+          <article class="kpi-card panel glass-panel">
+            <h3>Tracked Devices</h3>
+            <p id="kpiDevices">0</p>
+          </article>
+          <article class="kpi-card panel glass-panel">
+            <h3>Avg Confidence</h3>
+            <p id="kpiConfidence">0%</p>
+          </article>
+          <article class="kpi-card panel glass-panel">
+            <h3>High Confidence</h3>
+            <p id="kpiHighConfidence">0</p>
+          </article>
+          <article class="kpi-card panel glass-panel">
+            <h3>Fetch Latency</h3>
+            <p id="kpiLatency">0 ms</p>
+          </article>
+        </section>
+
+        <article class="panel scene-panel glass-panel">
+          <div class="panel-head">
+            <h2>3D Live Scene</h2>
+            <span class="pill">orbit + focus controls</span>
+          </div>
+          <canvas id="webglCanvas"></canvas>
+        </article>
+
+        <div class="center-row">
+          <article class="panel glass-panel">
+            <div class="panel-head">
+              <h2>Live Position Field</h2>
+              <span class="pill">xy projection</span>
+            </div>
+            <canvas id="mapCanvas" width="1000" height="500"></canvas>
+          </article>
+
+          <article class="panel glass-panel">
+            <div class="panel-head">
+              <h2>BLE Mesh Topology</h2>
+              <span class="pill">no cloud mode</span>
+            </div>
+            <canvas id="meshCanvas" width="1000" height="420"></canvas>
+          </article>
+        </div>
+      </section>
+
+      <aside class="right-sidebar">
+        <article class="panel glass-panel status-panel">
+          <div class="panel-head">
+            <h2>System Status</h2>
+            <span class="pill">live</span>
+          </div>
+          <small id="statusText">Waiting for first sync...</small>
+          <div id="deviceStatus" class="device-status"></div>
+        </article>
+
+        <article class="panel table-panel glass-panel">
+          <div class="panel-head">
+            <h2>Telemetry Snapshot</h2>
+            <span class="pill">latest /positions payload</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Device ID</th>
+                  <th>X</th>
+                  <th>Y</th>
+                  <th>Z</th>
+                  <th>Confidence</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody id="positionsTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel glass-panel">
+          <div class="panel-head">
+            <h2>Peer Relative Links</h2>
+            <span class="pill">latest /relative payload</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Target</th>
+                  <th>Estimated Distance (m)</th>
+                  <th>Absolute Distance (m)</th>
+                  <th>Error (m)</th>
+                  <th>RSSI</th>
+                </tr>
+              </thead>
+              <tbody id="relativeTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
